@@ -1,0 +1,24 @@
+﻿.orders-container {
+	padding: 1.5rem;
+	background-color: #f8f9fa;
+	border-radius: 6px;
+	margin-bottom: 2rem;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.order-title {
+	margin-top: 1rem;
+	font-weight: 600;
+	color: #2c3e50;
+	font-size: 1.2rem;
+}
+
+.quick-grid th {
+	background-color: #e9ecef;
+	font-weight: 600;
+	color: #343a40;
+}
+
+.quick-grid td {
+	padding: 0.5rem;
+}

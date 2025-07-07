@@ -1,0 +1,63 @@
+﻿@page "/"
+
+<PageTitle>Zamówienia</PageTitle>
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using Orders.Application.DTO
+@using Orders.Application.Interfaces
+
+@inject IOrderUpdateNotifier OrderNotifier
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<h4>Zamówienia</h4>
+
+<OrderGrid />
+
+@code {        
+    private HubConnection? hubConnection;
+    private bool isInitialized;    
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isInitialized)
+        {
+            isInitialized = true;
+
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/orderhub"))
+                .WithAutomaticReconnect()
+                .Build();
+            
+            hubConnection.On<List<OrderDto>>("OrderUpdated", (updatedOrders) =>            
+                OrderNotifier.NotifyOrdersUpdated(updatedOrders)
+            );
+
+            hubConnection.Closed += async (error) =>
+            {                                
+                await Task.Delay(Random.Shared.Next(1000, 3000));
+                await hubConnection.StartAsync();
+            };
+            
+            
+            await hubConnection.StartAsync();
+
+            if (hubConnection?.State == HubConnectionState.Connected)
+            {
+                Console.WriteLine("SignalR jest połączony!");
+            }
+            else
+            {
+                Console.WriteLine($"Brak połączenia. Obecny stan: {hubConnection?.State}");
+            }            
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

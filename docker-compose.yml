@@ -1,0 +1,6 @@
+services:
+  orders.presentation.blazor:
+    image: ${DOCKER_REGISTRY-}orderspresentationblazor
+    build:
+      context: .
+      dockerfile: Orders.Presentation.Blazor/Dockerfile
