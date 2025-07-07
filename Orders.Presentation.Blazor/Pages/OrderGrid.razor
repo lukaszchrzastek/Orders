@@ -1,0 +1,86 @@
+﻿@using Orders.Application.DTO
+@using Orders.Application.Interfaces
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inject OrderDataService OrderDataService
+@inject IOrderUpdateNotifier OrderNotifier
+
+@if (orders is null)
+{
+    <p><em>Pobieranie...</em></p>
+}
+else if (!orders.Any())
+{
+    <p><em>Brak zamówień.</em></p>
+}
+else
+{
+    @foreach (var order in orders.AsEnumerable().Reverse())
+    {
+        IQueryable<OrderLineDto> orderLines = order.OrderLines.AsQueryable();
+        <div class="orders-container">
+            <h5 class="order-title">Zamówienie: @order.Id</h5>
+
+            <QuickGrid TItem="OrderLineDto" Items="@(orderLines)" class="quick-grid">
+                <PropertyColumn Property="@(p => p.ProductName)" Title="Produkt" />
+                <PropertyColumn Property="@(p => p.Quantity)" Title="Ilość"/>
+                <TemplateColumn Title="Cena">
+                    @context.Price.ToString("C", new System.Globalization.CultureInfo("pl-PL"))
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+    }
+}
+
+@code {
+    private List<OrderDto>? orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        OrderNotifier.OrdersUpdated += OnOrdersUpdated;
+        await LoadOrders();
+    }
+        
+    private void OnOrdersUpdated(List<OrderDto> orderDtos) => 
+        _ = InvokeAsync(() => RefreshOrders(orderDtos));
+    
+    private void RefreshOrders(List<OrderDto> newOrders)
+    {
+        try
+        {            
+            if(orders is null)
+                orders = newOrders;
+            else
+            {                
+                var uniqueOrders = newOrders
+                .Where(o => !orders.Select(x => x.Id)
+                .Contains(o.Id))
+                .ToList();
+
+                orders.AddRange(uniqueOrders);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd odświeżania: {ex.Message}");
+        }
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            orders = await OrderDataService.GetOrdersAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd ładowania zamówień: {ex.Message}");
+            orders = new List<OrderDto>();
+        }
+    }
+
+    public void Dispose() => 
+        OrderNotifier.OrdersUpdated -= OnOrdersUpdated;
+}
